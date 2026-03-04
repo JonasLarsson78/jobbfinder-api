@@ -1,5 +1,9 @@
 {
   "type": "module",
+  "name": "jobbfinder",
+  "version": "1.0.0",
+  "description": "A web application that aggregates job listings from various sources and provides a user-friendly interface for job seekers.",
+  "main": "server.js",
   "dependencies": {
     "express": "^5.2.1",
     "node-fetch": "^3.3.2",

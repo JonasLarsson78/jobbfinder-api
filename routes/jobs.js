@@ -20,16 +20,6 @@ router.get("/", async (req, res) => {
       return res.status(400).json({ error: "Missing query param: city" });
     }
 
-    const parseBoolish = (v) => {
-      if (v === undefined || v === null) return false;
-      if (v === "") return true; // ?scan_linkedin (no value) should count as true
-      const s = String(v).toLowerCase();
-      return ["1", "true", "yes", "y", "on"].includes(s);
-    };
-    let scanLinkedInFlag = parseBoolish(req.query.scan_linkedin);
-    const rawQuery = req.originalUrl || req.url || "";
-    const presenceNoValue = /[?&]scan_linkedin(?=($|&))/i.test(rawQuery);
-    if (!scanLinkedInFlag && presenceNoValue) scanLinkedInFlag = true;
     // request received
     // Resolve municipality codes in parallel
     const codePromises = cities.map(async (c) => ({ city: c, code: await getMunicipalityCodeByCityName(c) }));
