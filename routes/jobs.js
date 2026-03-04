@@ -2,6 +2,7 @@ import express from "express";
 import fetch from "node-fetch";
 import { getMunicipalityCodeByCityName } from "../lib/municipalities.js";
 import { mapJobSearchResult } from "../lib/jobMapper.js";
+import { searchLinkedInByQuery } from "../lib/linkedin.js";
 
 const router = express.Router();
 
@@ -19,6 +20,17 @@ router.get("/", async (req, res) => {
       return res.status(400).json({ error: "Missing query param: city" });
     }
 
+    const parseBoolish = (v) => {
+      if (v === undefined || v === null) return false;
+      if (v === "") return true; // ?scan_linkedin (no value) should count as true
+      const s = String(v).toLowerCase();
+      return ["1", "true", "yes", "y", "on"].includes(s);
+    };
+    let scanLinkedInFlag = parseBoolish(req.query.scan_linkedin);
+    const rawQuery = req.originalUrl || req.url || "";
+    const presenceNoValue = /[?&]scan_linkedin(?=($|&))/i.test(rawQuery);
+    if (!scanLinkedInFlag && presenceNoValue) scanLinkedInFlag = true;
+    // request received
     // Resolve municipality codes in parallel
     const codePromises = cities.map(async (c) => ({ city: c, code: await getMunicipalityCodeByCityName(c) }));
     const resolved = await Promise.all(codePromises);
@@ -42,7 +54,40 @@ router.get("/", async (req, res) => {
           return { city, municipalityCode: code, error: { status: jobRes.status, statusText: jobRes.statusText } };
         }
         const data = await jobRes.json();
-        return { city, municipalityCode: code, result: mapJobSearchResult(data) };
+        const mapped = mapJobSearchResult(data);
+
+        // Scan LinkedIn for matching jobs (best-effort HTML fetch + parse).
+        try {
+          const liLocation = city;
+          const liQuery = q || `${mapped.afMatches[0]?.headline || ""} ${mapped.afMatches[0]?.employer || ""}`.trim();
+          // linkedin call
+          const linkedinMatches = await searchLinkedInByQuery({ query: liQuery, location: liLocation, limit: 10 });
+          // linkedin result: count added to mapped.total
+
+          mapped.linkedinMatches = linkedinMatches;
+          // Add linkedin matches into total.value (preserve existing shape)
+          try {
+            const add = Array.isArray(linkedinMatches) ? linkedinMatches.length : 0;
+            if (add > 0) {
+              if (mapped.total && typeof mapped.total === 'object' && mapped.total.value != null) {
+                mapped.total.value = Number(mapped.total.value) + add;
+              } else if (mapped.total != null) {
+                mapped.total = { value: Number(mapped.total) + add };
+              } else {
+                mapped.total = { value: add };
+              }
+            }
+          } catch (e) {
+            // ignore total adjustment errors
+          }
+
+          return { city, municipalityCode: code, result: mapped };
+        } catch (e) {
+          mapped.linkedinMatches = [];
+          return { city, municipalityCode: code, result: mapped };
+        }
+
+        return { city, municipalityCode: code, result: mapped };
       } catch (err) {
         return { city, municipalityCode: code, error: { message: String(err) } };
       }
@@ -54,7 +99,9 @@ router.get("/", async (req, res) => {
     if (results.length === 1 && notFound.length === 0) {
       const r = results[0];
       if (r.error) return res.status(502).json({ error: "JobSearch API error", details: r.error });
-      return res.json({ city: r.city, municipalityCode: r.municipalityCode, query: q, result: r.result });
+      // Include linkedinMatches when present so single-city callers receive the combined data
+      const out = { city: r.city, municipalityCode: r.municipalityCode, query: q, result: r.result };
+      return res.json(out);
     }
 
     // Multiple cities: return per-city results and list of cities not found
