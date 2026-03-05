@@ -77,7 +77,6 @@ router.get("/", async (req, res) => {
           return { city, municipalityCode: code, result: mapped };
         }
 
-        return { city, municipalityCode: code, result: mapped };
       } catch (err) {
         return { city, municipalityCode: code, error: { message: String(err) } };
       }

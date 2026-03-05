@@ -5,8 +5,10 @@
   "description": "A web application that aggregates job listings from various sources and provides a user-friendly interface for job seekers.",
   "main": "server.js",
   "dependencies": {
+    "cheerio": "^1.0.0-rc.12",
+    "cors": "^2.8.6",
     "express": "^5.2.1",
-    "node-fetch": "^3.3.2",
-    "cheerio": "^1.0.0-rc.12"
+    "morgan": "^1.10.1",
+    "node-fetch": "^3.3.2"
   }
 }
