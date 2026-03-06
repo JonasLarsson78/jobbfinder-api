@@ -9,8 +9,9 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+app.use(express.static("public"));
+
 app.use(morgan("dev"));
-app.get('/favicon.ico', (req, res) => res.sendStatus(204));
 app.use("/jobs", jobsRouter);
 
 app.listen(PORT, () => {

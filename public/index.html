@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="sv">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Jobbfinder API</title>
+		<link rel="icon" href="/favicon.ico" type="image/x-icon" />
+		<link rel="stylesheet" href="/index.css" />
+	</head>
+	<body>
+		<h1>Jobbfinder API</h1>
+		<p>
+			Det här är en enkel beskrivning av hur du använder Jobbfinder API:t
+			som körs på <code>http://localhost:3000</code>.
+		</p>
+
+		<h2>Bas-URL</h2>
+		<p>
+			Alla endpoints utgår från:
+			<br />
+			<code>http://localhost:3000/jobs</code>
+		</p>
+
+		<h2>Endpoints</h2>
+
+		<div class="endpoint">
+			<span class="method get">GET</span>
+			<code>/jobs</code>
+		</div>
+		<p>Hämtar en lista med jobb baserat på olika sökparametrar.</p>
+
+		<h3>Query-parametrar (exempel)</h3>
+		<ul>
+			<li><code>q</code> – fritextsökning (titel, beskrivning, etc.)</li>
+			<li><code>municipality</code> – kommun (t.ex. "Stockholm")</li>
+			<li><code>limit</code> – antal jobb att hämta (standard kan variera)</li>
+			<li><code>offset</code> – för paginering (hoppa över N jobb)</li>
+		</ul>
+
+		<h3>Exempelanrop med curl</h3>
+		<pre><code>curl "http://localhost:3000/jobs?q=utvecklare&amp;municipality=Stockholm&amp;limit=20"</code></pre>
+
+		<h3>Exempelanrop i JavaScript (fetch)</h3>
+		<pre><code>fetch("http://localhost:3000/jobs?q=utvecklare&amp;municipality=Stockholm&amp;limit=20")
+	.then(res =&gt; res.json())
+	.then(data =&gt; {
+		console.log("Antal jobb:", data.length);
+		console.log(data);
+	})
+	.catch(console.error);</code></pre>
+
+		<h2>HTTP-svar</h2>
+		<p>
+			API:t returnerar JSON. Strukturen beror på om du frågar efter en eller
+			flera städer.
+		</p>
+
+		<h3>1 stad (t.ex. <code>?city=Stockholm</code>)</h3>
+		<p>Exempelsvar:</p>
+		<pre><code>{
+	"city": "Stockholm",
+	"municipalityCode": "0180",
+	"query": "utvecklare",      // din q-parameter (kan vara tom sträng)
+	"result": {
+		"total": 42,               // totalt antal matcher (AF + ev. LinkedIn)
+		"afMatches": [
+			{
+				"headline": "JavaScript-utvecklare",
+				"employer": "Företag AB",
+				"webpage_url": "https://...",      // länk till annons/ansökan
+				"application_deadline": "2026-03-31", // YYYY-MM-DD eller null
+				"number_of_vacancies": 1,           // antal tjänster eller null
+				"conditions": "Start: Omgående; ...", // kort sammanfattning om villkor om möjligt
+				"salary_description": "Fast lön"   // om tillgängligt
+			}
+			// ... fler jobb
+		],
+		"linkedinMatches": [
+			{
+				"title": "Frontend Developer",
+				"company": "LinkedIn AB",
+				"location": "Stockholm, Stockholm, Sverige",
+				"datetime": "2026-03-01",               // publiceringsdatum från &lt;time datetime="..."&gt;
+				"url": "https://www.linkedin.com/jobs/view/..." // direktlänk till jobbannons på LinkedIn
+			}
+			// ... fler LinkedIn-jobb
+		]
+	}
+}</code></pre>
+
+		<h3>Flera städer (t.ex. <code>?city=Stockholm&city=Göteborg</code>)</h3>
+		<p>Exempelsvar:</p>
+		<pre><code>{
+	"queries": [
+		{
+			"city": "Stockholm",
+			"municipalityCode": "0180",
+			"result": { "total": 42, "afMatches": [ /* ... */ ], "linkedinMatches": [ /* ... */ ] }
+		},
+		{
+			"city": "Göteborg",
+			"municipalityCode": "1480",
+			"result": { "total": 10, "afMatches": [ /* ... */ ], "linkedinMatches": [ /* ... */ ] }
+		}
+	],
+	"notFound": [
+		// lista med städer som inte kunde matchas mot en kommunkod
+		// t.ex. ["OkändStad"]
+	]
+}</code></pre>
+
+		<p>
+			Om JobTech JobSearch-API:t eller LinkedIn-scrapingen ger fel för en
+			viss stad markeras detta i respektive objekt under <code>queries</code>
+			med ett <code>error</code>-fält istället för <code>result</code>.
+		</p>
+
+		<h2>Felhantering</h2>
+		<p>
+			Vid fel (t.ex. externa API:n nere eller ogiltiga parametrar) kan API:t
+			svara med relevant HTTP-statuskod (t.ex. <code>500</code> eller
+			<code>400</code>). Kolla svarskod och innehåll i svaret för mer info.
+		</p>
+
+		<div class="footer">
+			<p>
+				Tips: öppna utvecklingskonsolen i webbläsaren (Network-fliken) när du
+				testar anrop för att se exakt vilka requests som görs och vilka svar
+				som kommer tillbaka.
+			</p>
+		</div>
+	</body>
+</html>
+
