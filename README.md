@@ -38,6 +38,19 @@ Servern använder `server.js` som entrypoint. Eftersom det inte finns något `st
 ## Användning
 Efter att servern körs, gör en HTTP GET mot den endpoint som `routes/jobs.js` exponerar (t.ex. `/jobs`) för att få listan med jobb.
 
+### Exclude-filter
+Du kan filtrera bort annonser som innehåller vissa ord i rubrik eller beskrivning genom query-parametern `exclude`.
+
+- Enkel användning (kommaseparerad lista):
+
+```bash
+curl -s "http://localhost:3000/jobs?city=Stockholm&exclude=vikariat,praktik"
+```
+
+- Alternativt kan du skicka parametern upprepade gånger: `?exclude=vikariat&exclude=praktik`
+
+Matchningen är case-insensitive och gör en enkel delsträngsökning mot `headline` och det extraherade `conditions`-fältet (från `mapJobSearchResult`). LinkedIn-resultat filtreras mot `title`/`company`/`description`.
+
 ## Exempel på request och svar
 
 1) Enkel förfrågan (en kommun)

@@ -3,6 +3,7 @@ import fetch from "node-fetch";
 import { getMunicipalityCodeByCityName } from "../lib/municipalities.js";
 import { mapJobSearchResult } from "../lib/jobMapper.js";
 import { searchLinkedInByQuery } from "../lib/linkedin.js";
+import { applyExcludeFilters } from "../lib/excludeFilter.js";
 
 const router = express.Router();
 
@@ -10,6 +11,11 @@ router.get("/", async (req, res) => {
   try {
     const cityParam = req.query.city;
     const q = req.query.q || "";
+    const excludeParam = req.query.exclude;
+    let excludes = [];
+    if (Array.isArray(excludeParam)) excludes = excludeParam.map((e) => String(e).trim()).filter(Boolean);
+    else if (typeof excludeParam === "string") excludes = excludeParam.split(",").map((e) => e.trim()).filter(Boolean);
+    const excludesLower = excludes.map((s) => s.toLowerCase());
 
     // accept repeated city params or comma-separated list
     let cities = [];
@@ -69,6 +75,15 @@ router.get("/", async (req, res) => {
             }
           } catch (e) {
             // ignore total adjustment errors
+          }
+
+          // Apply exclude filters (delegated to helper)
+          try {
+            if (excludes && excludes.length > 0) {
+              applyExcludeFilters(mapped, excludes);
+            }
+          } catch (e) {
+            // ignore filter errors
           }
 
           return { city, municipalityCode: code, result: mapped };
