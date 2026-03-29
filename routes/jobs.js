@@ -15,7 +15,6 @@ router.get("/", async (req, res) => {
     let excludes = [];
     if (Array.isArray(excludeParam)) excludes = excludeParam.map((e) => String(e).trim()).filter(Boolean);
     else if (typeof excludeParam === "string") excludes = excludeParam.split(",").map((e) => e.trim()).filter(Boolean);
-    const excludesLower = excludes.map((s) => s.toLowerCase());
 
     // accept repeated city params or comma-separated list
     let cities = [];
